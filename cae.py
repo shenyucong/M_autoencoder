@@ -105,8 +105,7 @@ def read_and_decode(filename_queue):
     features = tf.parse_single_example(serialized_example, features={
         'height': tf.FixedLenFeature([], tf.int64),
         'width': tf.FixedLenFeature([], tf.int64),
-        'image_raw': tf.FixedLenFeature([], tf.string),
-        'label': tf.FixedLenFeature([], tf.int64),
+        'image_raw': tf.FixedLenFeature([], tf.string)
         })
 
     image = tf.decode_raw(features['image_raw'], tf.uint8)
@@ -114,10 +113,8 @@ def read_and_decode(filename_queue):
     width = tf.cast(features['width'], tf.int32)
     image = tf.reshape(image, [height, width])
     image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
-    label = tf.cast(features['label'], tf.int32)
     image = tf.expand_dims(image, -1)
     image = tf.image.resize_images(image, (28, 28))
-    label = tf.one_hot(tf.cast(label, tf.int32), depth = 10)
     return image, label
 
 BATCHE_SIZE = 25
@@ -131,11 +128,10 @@ with name_scope('input'):
 x = tf.placeholder(tf.float32, [None, 28, 28, 1], name = "x")
 tf.summary.image('input', x, 3)
 
-y_ = tf.placeholder(tf.float32, [None, 28, 28, 1], name = "origin_image")
-
 reconstruct = deepnn(x)
 
 with name_scope('loss'):
+    loss = tf.nn.l2_loss(x - reconstruction)
 
 with tf.name_scope('adam_optimizer'):
     train_step = tf.train.AdamOptimizer(1e-6).minimize(loss)
