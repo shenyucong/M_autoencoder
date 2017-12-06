@@ -127,9 +127,10 @@ with name_scope('input'):
     images_batch  = tf.train.shuffle_batch(images, batch_size=BATCH_SIZE, num_threads=1,capacity=1000 + 3 * BATCH_SIZE, min_after_dequeue = 1000)
 
 x = tf.placeholder(tf.float32, [None, 28, 28, 1], name = "x")
-tf.summary.image('input', x, 3)
+tf.summary.image('input', x, 10)
 
 reconstruct = deepnn(x)
+tf.summary.image('reconstruct', reconstruct, 10)
 
 with name_scope('loss'):
     loss = tf.nn.l2_loss(x - reconstruction)
