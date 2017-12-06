@@ -1,4 +1,5 @@
 import tensorflow as tf
+import os.path
 
 def deep(x):
     '''
@@ -65,7 +66,7 @@ def deep(x):
         h_uppool2 = up_pool(h_deconv1)
 
     with tf.name_scope('deconv2'):
-        W_conv4 = weight_variables([5, 5, 32, 1])
+        W_conv4 = weight_variables([5, 5, 1, 32])
         b_conv4 = bias_variable([1])
         reconstruct = tf.nn.relu(deconv2d(h_uppool2, W_conv4) + b_conv4) #maybe has bug
         tf.summary.histogram("weights", W_conv4)
@@ -118,12 +119,38 @@ def read_and_decode(filename_queue):
     label = tf.one_hot(tf.cast(label, tf.int32), depth = 10)
     return image, label
 
-def num_correct_prediction(logits, labels):
-    """Evaluate the quality of the logits at predicting the label.
-    Return:
-        the number of correct predictions
-    """
-    correct = tf.equal(tf.arg_max(logits, 1), tf.arg_max(labels, 1))
-    correct = tf.cast(correct, tf.int32)
-    n_correct = tf.reduce_sum(correct)
-    return n_correct
+BATCHE_SIZE = 25
+tfrecords_name = ''
+tfrecords_path = ''
+filename = os.path.join(tfrecords_path, tfrecords_name)
+with name_scope('input'):
+    images = read_and_decode(filename_queue)
+    images_batch  = tf.train.shuffle_batch(images, batch_size=BATCH_SIZE, num_threads=1,capacity=1000 + 3 * BATCH_SIZE, min_after_dequeue = 1000)
+
+x = tf.placeholder(tf.float32, [None, 28, 28, 1], name = "x")
+tf.summary.image('input', x, 3)
+
+y_ = tf.placeholder(tf.float32, [None, 18], name = "labels")
+
+y_conv, keep_prob = deepnn(x)
+
+with name_scope('loss'):
+
+with tf.name_scope('adam_optimizer'):
+    train_step = tf.train.AdamOptimizer(1e-6).minimize(loss)
+
+summ = tf.summary.merge_all()
+
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(coord=coord)
+    tra_summary_writer = tf.summary.FileWriter(train_log_dir)
+    tra_summary_writer.add_graph(sess.graph)
+    images = sess.run([images_batch])
+    print(images)
+    summary = sess.run([summ])
+    tra_summary_writer.add_summary(summary, i)
+    coord.request_stop()
+    coord.join(threads)
+
