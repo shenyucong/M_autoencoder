@@ -71,6 +71,7 @@ def deep(x):
         reconstruct = tf.nn.relu(deconv2d(h_uppool2, W_conv4) + b_conv4) #maybe has bug
         tf.summary.histogram("weights", W_conv4)
         tf.summary.histogram("biases", b_conv4)
+    return reconstruct
 
 def conv2d(x, W):
     '''conv2d returns a 2d convolution layer with full stride'''
@@ -130,9 +131,9 @@ with name_scope('input'):
 x = tf.placeholder(tf.float32, [None, 28, 28, 1], name = "x")
 tf.summary.image('input', x, 3)
 
-y_ = tf.placeholder(tf.float32, [None, 18], name = "labels")
+y_ = tf.placeholder(tf.float32, [None, 28, 28, 1], name = "origin_image")
 
-y_conv, keep_prob = deepnn(x)
+reconstruct = deepnn(x)
 
 with name_scope('loss'):
 
