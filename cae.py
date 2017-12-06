@@ -115,7 +115,7 @@ def read_and_decode(filename_queue):
     image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
     image = tf.expand_dims(image, -1)
     image = tf.image.resize_images(image, (28, 28))
-    return image, label
+    return image
 
 BATCHE_SIZE = 25
 tfrecords_name = ''
