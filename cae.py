@@ -20,7 +20,7 @@ def deep(x):
         h_pool1 = max_pool(h_conv1)
 
     with tf.name_scope('conv2'):
-        W_conv2 = weight_variables([5, 5, 32, 32])
+        W_conv2 = weight_variable([5, 5, 32, 32])
         b_conv2 = bias_variable([32])
         h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
         tf.summary.histogram("weights", W_conv1)
@@ -50,7 +50,7 @@ def deep(x):
         tf.summary.histogram("decode/relu", decode)
 
     with tf.name_scope('fold'):
-        fold1 = tf.reshpae(decode, (-1, 7, 7, 32))
+        fold1 = tf.reshape(decode, (-1, 7, 7, 32))
 
     with tf.name_scope('up_pool1'):
         h_uppool1 = up_pool(fold1) #how to implement up_pool?
@@ -83,11 +83,11 @@ def max_pool(x):
 
 def deconv2d(x, W):
     '''deconv2d returns a 2d transpose convolution layer with full stride'''
-    return tf.nn.conv2d(x, W, strides = [1, 1, 1, 1], padding = 'SAME')
+    return tf.nn.conv2d_transpose(x, W, strides = [1, 1, 1, 1], output_shape = [,, 1, 1],padding = 'SAME')
 
 def up_pool(x):
     '''up_pool returns upsamples a feature map by 2x.'''
-    return tf.nn.conv2d_transpose(x, [1, 1, 1, 1], strides = [1, 1, 1, 1], padding = 'VALID')
+    return tf.nn.conv2d_transpose(x, , strides = [1, 1, 1, 1], output_shape = [,, 1, 1], padding = 'VALID')
 
 def weight_variable(shape):
     '''weight_variable returns a weights variable of a given shape'''
@@ -117,19 +117,21 @@ def read_and_decode(filename_queue):
     image = tf.image.resize_images(image, (28, 28))
     return image
 
-BATCHE_SIZE = 25
-tfrecords_name = ''
-tfrecords_path = ''
-train_log_dir = ''
+BATCH_SIZE = 25
+tfrecords_name = 'mnist.tfrecords'
+tfrecords_path = '/Users/chenyucong/Desktop/research/M_autoencoder/'
+train_log_dir = '/Users/chenyucong/Desktop/research/M_autoencoder/log/'
 filename = os.path.join(tfrecords_path, tfrecords_name)
-with name_scope('input'):
+with tf.name_scope('input'):
+    filename_queue = tf.train.string_input_producer([filename])
     images = read_and_decode(filename_queue)
-    images_batch  = tf.train.shuffle_batch(images, batch_size=BATCH_SIZE, num_threads=1,capacity=1000 + 3 * BATCH_SIZE, min_after_dequeue = 1000)
+
+    images_batch, images_useless  = tf.train.shuffle_batch([images, images], batch_size=BATCH_SIZE, num_threads=1,capacity=1000 + 3 * BATCH_SIZE, min_after_dequeue = 1000)
 
 x = tf.placeholder(tf.float32, [None, 28, 28, 1], name = "x")
 tf.summary.image('input', x, 10)
 
-reconstruct = deepnn(x)
+reconstruct = deep(x)
 tf.summary.image('reconstruct', reconstruct, 10)
 
 with name_scope('loss'):
