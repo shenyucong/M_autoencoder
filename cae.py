@@ -120,6 +120,7 @@ def read_and_decode(filename_queue):
 BATCHE_SIZE = 25
 tfrecords_name = ''
 tfrecords_path = ''
+train_log_dir = ''
 filename = os.path.join(tfrecords_path, tfrecords_name)
 with name_scope('input'):
     images = read_and_decode(filename_queue)
@@ -134,20 +135,26 @@ with name_scope('loss'):
     loss = tf.nn.l2_loss(x - reconstruction)
 
 with tf.name_scope('adam_optimizer'):
-    train_step = tf.train.AdamOptimizer(1e-6).minimize(loss)
+    train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
 summ = tf.summary.merge_all()
-
+saver = tf.train.Saver(tf.global_variables())
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(coord=coord)
     tra_summary_writer = tf.summary.FileWriter(train_log_dir)
     tra_summary_writer.add_graph(sess.graph)
-    images = sess.run([images_batch])
-    print(images)
-    summary = sess.run([summ])
-    tra_summary_writer.add_summary(summary, i)
+    for i in range(20000):
+        images = sess.run(images_batch)
+        los, _ = sess.run([loss, train_step], feed_dict = {x: images})
+        if i % 100:
+            print('Step %d, loss %.4f' % (i, los))
+        if step % 1000 == 0:
+            checkpoint_path = os.path.join(train_log_dir, 'model.ckpt')
+            saver.save(sess, checkpoint_path, global_step=i)
+        summary = sess.run(summ)
+        tra_summary_writer.add_summary(summary, i)
     coord.request_stop()
     coord.join(threads)
 
