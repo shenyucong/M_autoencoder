@@ -29,11 +29,47 @@ def deep(x):
         h_pool2 = max_pool(h_conv2)
 
     with tf.name_scope('unfold'):
-        num, height, width, channels = h_pool2.getshape()
-        unfold1 = tf.reshape(h_pool2, (-1, height, width, channels))
+        unfold1 = tf.reshape(h_pool2, (-1, 7*7*32))
 
     with tf.name_scope('encode'):
         W_fc1 = weight_variable([7*7*32, 20])
+        b_fc1 = bias_variable([20])
+
+        encode = tf.nn.relu(tf.matmul(unfold1, W_fc1) + b_fc1)
+        tf.summary.histogram("weights", W_fc1)
+        tf.summary.histogram("biases", b_fc1)
+        tf.summary.histogram("encode/relu", encode)
+
+    with tf.name_scope('decode'):
+        W_fc2 = weight_variable([20, 7*7*32])
+        b_fc2 = bias_variable([7*7*32])
+        decode = tf.nn.relu(tf.matmul(encode, W_fc2) + b_fc2)
+        tf.summary.histogram("weights", W_fc2)
+        tf.summary.histogram("biases", b_fc2)
+        tf.summary.histogram("decode/relu", decode)
+
+    with tf.name_scope('fold'):
+        fold1 = tf.reshpae(decode, (-1, 7, 7, 32))
+
+    with tf.name_scope('up_pool1'):
+        h_uppool1 = up_pool(fold1) #how to implement up_pool?
+
+    with tf.name_scope('deconv1'):
+        W_conv3 = weight_variables([5, 5, 32, 32])
+        b_conv3 = bias_variable([32])
+        h_deconv1 = tf.nn.relu(deconv2d(h_uppool1, W_conv3) + b_conv3)
+        tf.summary.histogram("weights", W_conv3)
+        tf.summary.histogram("biases", b_conv3)
+
+    with tf.name_scope('up_pool2'):
+        h_uppool2 = up_pool(h_deconv1)
+
+    with tf.name_scope('deconv2'):
+        W_conv4 = weight_variables([5, 5, 32, 1])
+        b_conv4 = bias_variable([1])
+        reconstruct = tf.nn.relu(deconv2d(h_uppool2, W_conv4) + b_conv4) #maybe has bug
+        tf.summary.histogram("weights", W_conv4)
+        tf.summary.histogram("biases", b_conv4)
 
 def conv2d(x, W):
     '''conv2d returns a 2d convolution layer with full stride'''
@@ -42,6 +78,14 @@ def conv2d(x, W):
 def max_pool(x):
     '''max_pool downsamples a feature map by 2x.'''
     return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME')
+
+def deconv2d(x, W):
+    '''deconv2d returns a 2d transpose convolution layer with full stride'''
+    return tf.nn.conv2d(x, W, strides = [1, 1, 1, 1], padding = 'SAME')
+
+def up_pool(x):
+    '''up_pool returns upsamples a feature map by 2x.'''
+    return tf.nn.conv2d_transpose(x, [1, 1, 1, 1], strides = [1, 1, 1, 1], padding = 'VALID')
 
 def weight_variable(shape):
     '''weight_variable returns a weights variable of a given shape'''
