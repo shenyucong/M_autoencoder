@@ -138,7 +138,7 @@ with tf.name_scope('loss'):
     loss = tf.nn.l2_loss(x - reconstruct)
 
 with tf.name_scope('adam_optimizer'):
-    train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
+    train_step = tf.train.GradientDescentOptimizer(1e-4).minimize(loss)
 
 summ = tf.summary.merge_all()
 saver = tf.train.Saver(tf.global_variables())
