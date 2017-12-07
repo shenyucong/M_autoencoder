@@ -58,24 +58,24 @@ def deep(x):
 
     with tf.name_scope('up_pool1'):
         W_up1 = weight_variable([2, 2, 32, 32])
-        h_uppool1 = tf.nn.conv2d_transpose(fold1, W_up1, output_shape = [25, 14, 14, 32], strides = [1, 2, 2, 1], padding = 'VALID')
+        h_uppool1 = tf.nn.conv2d_transpose(fold1, W_up1, output_shape = [1, 14, 14, 32], strides = [1, 2, 2, 1], padding = 'VALID')
 
     with tf.name_scope('deconv1'):
         W_conv3 = weight_variable([5, 5, 32, 32])
         b_conv3 = bias_variable([32])
-        h_deconv1 = tf.nn.relu(tf.nn.conv2d_transpose(h_uppool1, W_conv3, output_shape = [25, 14, 14, 32], strides = [1, 1, 1, 1], padding = 'SAME') + b_conv3)
+        h_deconv1 = tf.nn.relu(tf.nn.conv2d_transpose(h_uppool1, W_conv3, output_shape = [1, 14, 14, 32], strides = [1, 1, 1, 1], padding = 'SAME') + b_conv3)
         tf.summary.histogram("weights", W_conv3)
         tf.summary.histogram("biases", b_conv3)
         tf.summary.histogram("activate", h_deconv1)
 
     with tf.name_scope('up_pool2'):
         W_up2 = weight_variable([2, 2, 32, 32])
-        h_uppool2 = tf.nn.conv2d_transpose(h_deconv1, W_up2, output_shape = [25, 28, 28, 32], strides = [1, 2, 2, 1], padding = 'VALID')
+        h_uppool2 = tf.nn.conv2d_transpose(h_deconv1, W_up2, output_shape = [1, 28, 28, 32], strides = [1, 2, 2, 1], padding = 'VALID')
 
     with tf.name_scope('deconv2'):
         W_conv4 = weight_variable([5, 5, 1, 32])
         b_conv4 = bias_variable([1])
-        reconstruct = tf.nn.relu(tf.nn.conv2d_transpose(h_uppool2, W_conv4, output_shape = [25, 28, 28, 1], strides = [1, 1, 1, 1], padding = 'SAME') + b_conv4) #maybe has bug
+        reconstruct = tf.nn.relu(tf.nn.conv2d_transpose(h_uppool2, W_conv4, output_shape = [1, 28, 28, 1], strides = [1, 1, 1, 1], padding = 'SAME') + b_conv4) #maybe has bug
         tf.summary.histogram("weights", W_conv4)
         tf.summary.histogram("biases", b_conv4)
         tf.summary.histogram("activate", reconstruct)
@@ -117,7 +117,7 @@ def read_and_decode(filename_queue):
     image = tf.image.resize_images(image, (28, 28))
     return image
 
-BATCH_SIZE = 25
+BATCH_SIZE = 1
 tfrecords_name = 'mnist.tfrecords'
 tfrecords_path = '/Users/chenyucong/Desktop/research/M_autoencoder/'
 train_log_dir = '/Users/chenyucong/Desktop/research/M_autoencoder/log/'
@@ -138,7 +138,7 @@ with tf.name_scope('loss'):
     loss = tf.nn.l2_loss(x - reconstruct)
 
 with tf.name_scope('adam_optimizer'):
-    train_step = tf.train.GradientDescentOptimizer(1e-4).minimize(loss)
+    train_step = tf.train.AdamOptimizer(1e-6).minimize(loss)
 
 summ = tf.summary.merge_all()
 saver = tf.train.Saver(tf.global_variables())
@@ -151,7 +151,7 @@ with tf.Session() as sess:
     for i in range(20000):
         images = sess.run(images_batch)
         los, _ = sess.run([loss, train_step], feed_dict = {x: images})
-        if i % 100:
+        if i % 100 == 0:
             print('Step %d, loss %.4f' % (i, los))
         if i % 1000 == 0:
             checkpoint_path = os.path.join(train_log_dir, 'model.ckpt')
