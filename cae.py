@@ -15,6 +15,7 @@ def deep(x):
         h_conv1 = tf.nn.relu(conv2d(x, W_conv1) + b_conv1)
         tf.summary.histogram("weights", W_conv1)
         tf.summary.histogram("biases", b_conv1)
+        tf.summary.histogram("activate", h_conv1)
 
     with tf.name_scope('pool1'):
         h_pool1 = max_pool(h_conv1)
@@ -25,6 +26,7 @@ def deep(x):
         h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
         tf.summary.histogram("weights", W_conv1)
         tf.summary.histogram("biases", b_conv1)
+        tf.summary.histogram("activate", h_conv2)
 
     with tf.name_scope('pool2'):
         h_pool2 = max_pool(h_conv2)
@@ -53,24 +55,26 @@ def deep(x):
         fold1 = tf.reshape(decode, (-1, 7, 7, 32))
 
     with tf.name_scope('up_pool1'):
-        h_uppool1 = up_pool(fold1) #how to implement up_pool?
+        h_uppool1 = tf.nn.conv2d_transpose(fold1, [], output_shape = [14, 14, 32, 32], strides = [], padding = 'VALID')
 
     with tf.name_scope('deconv1'):
         W_conv3 = weight_variables([5, 5, 32, 32])
         b_conv3 = bias_variable([32])
-        h_deconv1 = tf.nn.relu(deconv2d(h_uppool1, W_conv3) + b_conv3)
+        h_deconv1 = tf.nn.relu(tf.nn.conv2d_transpose(h_uppool1, W_conv3, output_shape = [14, 14, 32, 32], strides = [1, 1, 1, 1], padding = 'SAME') + b_conv3)
         tf.summary.histogram("weights", W_conv3)
         tf.summary.histogram("biases", b_conv3)
+        tf.summary.histogram("activate", H_deconv1)
 
     with tf.name_scope('up_pool2'):
-        h_uppool2 = up_pool(h_deconv1)
+        h_uppool2 = tf.nn.conv2d_transpose(h_deconv1, [], output_shape = [28, 28, 32, 32], strides = [], padding = 'VALID')
 
     with tf.name_scope('deconv2'):
         W_conv4 = weight_variables([5, 5, 1, 32])
         b_conv4 = bias_variable([1])
-        reconstruct = tf.nn.relu(deconv2d(h_uppool2, W_conv4) + b_conv4) #maybe has bug
+        reconstruct = tf.nn.relu(tf.nn.conv2d_transpose(h_uppool2, W_conv4, output_shape = [28, 28, 32, 32], strides = [1, 1, 1, 1], padding = 'SAME') + b_conv4) #maybe has bug
         tf.summary.histogram("weights", W_conv4)
         tf.summary.histogram("biases", b_conv4)
+        tf.summary.histogram("activate", reconstruct)
     return reconstruct
 
 def conv2d(x, W):
@@ -80,14 +84,6 @@ def conv2d(x, W):
 def max_pool(x):
     '''max_pool downsamples a feature map by 2x.'''
     return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME')
-
-def deconv2d(x, W):
-    '''deconv2d returns a 2d transpose convolution layer with full stride'''
-    return tf.nn.conv2d_transpose(x, W, strides = [1, 1, 1, 1], output_shape = [,, 1, 1],padding = 'SAME')
-
-def up_pool(x):
-    '''up_pool returns upsamples a feature map by 2x.'''
-    return tf.nn.conv2d_transpose(x, , strides = [1, 1, 1, 1], output_shape = [,, 1, 1], padding = 'VALID')
 
 def weight_variable(shape):
     '''weight_variable returns a weights variable of a given shape'''
