@@ -9,6 +9,8 @@ def deep(x):
     Returns:
         the logits
     '''
+    tf.summary.image('input',x, 10)
+
     with tf.name_scope('conv1'):
         W_conv1 = weight_variable([5, 5, 1, 32])
         b_conv1 = bias_variable([32])
@@ -55,23 +57,25 @@ def deep(x):
         fold1 = tf.reshape(decode, (-1, 7, 7, 32))
 
     with tf.name_scope('up_pool1'):
-        h_uppool1 = tf.nn.conv2d_transpose(fold1, [], output_shape = [14, 14, 32, 32], strides = [], padding = 'VALID')
+        W_up1 = weight_variable([2, 2, 32, 32])
+        h_uppool1 = tf.nn.conv2d_transpose(fold1, W_up1, output_shape = [14, 14, 32, 32], strides = [1, 2, 2, 1], padding = 'VALID')
 
     with tf.name_scope('deconv1'):
-        W_conv3 = weight_variables([5, 5, 32, 32])
+        W_conv3 = weight_variable([5, 5, 32, 32])
         b_conv3 = bias_variable([32])
         h_deconv1 = tf.nn.relu(tf.nn.conv2d_transpose(h_uppool1, W_conv3, output_shape = [14, 14, 32, 32], strides = [1, 1, 1, 1], padding = 'SAME') + b_conv3)
         tf.summary.histogram("weights", W_conv3)
         tf.summary.histogram("biases", b_conv3)
-        tf.summary.histogram("activate", H_deconv1)
+        tf.summary.histogram("activate", h_deconv1)
 
     with tf.name_scope('up_pool2'):
-        h_uppool2 = tf.nn.conv2d_transpose(h_deconv1, [], output_shape = [28, 28, 32, 32], strides = [], padding = 'VALID')
+        W_up2 = weight_variable([2, 2, 32, 32])
+        h_uppool2 = tf.nn.conv2d_transpose(h_deconv1, W_up2, output_shape = [28, 28, 32, 32], strides = [1, 2, 2, 1], padding = 'VALID')
 
     with tf.name_scope('deconv2'):
-        W_conv4 = weight_variables([5, 5, 32, 1])
+        W_conv4 = weight_variable([5, 5, 1, 32])
         b_conv4 = bias_variable([1])
-        reconstruct = tf.nn.relu(tf.nn.conv2d_transpose(h_uppool2, W_conv4, output_shape = [28, 28, 32, 1], strides = [1, 1, 1, 1], padding = 'SAME') + b_conv4) #maybe has bug
+        reconstruct = tf.nn.relu(tf.nn.conv2d_transpose(h_uppool2, W_conv4, output_shape = [25, 28, 28, 1], strides = [1, 1, 1, 1], padding = 'SAME') + b_conv4) #maybe has bug
         tf.summary.histogram("weights", W_conv4)
         tf.summary.histogram("biases", b_conv4)
         tf.summary.histogram("activate", reconstruct)
@@ -130,7 +134,7 @@ tf.summary.image('input', x, 10)
 reconstruct = deep(x)
 tf.summary.image('reconstruct', reconstruct, 10)
 
-with name_scope('loss'):
+with tf.name_scope('loss'):
     loss = tf.nn.l2_loss(x - reconstruction)
 
 with tf.name_scope('adam_optimizer'):
